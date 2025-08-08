@@ -14,10 +14,49 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+enum Role {
+  MANAGER
+  CARE_WORKER
+  ADMIN
+}
+
 model User {
+  id         String      @id @default(cuid())
+  email      String      @unique
+  name       String?
+  password   String?
+  role       Role        @default(CARE_WORKER)
+  googleId   String?     @unique
+  googleAuth Boolean     @default(false)
+  perimeters Perimeter[]
+  clockIns   ClockIn[]
+  createdAt  DateTime    @default(now())
+  updatedAt  DateTime    @updatedAt
+}
+
+model Perimeter {
   id        String   @id @default(cuid())
-  email     String   @unique
-  name      String?
+  name      String
+  location  String
+  latitude  Float
+  longitude Float
+  radius    Float
+  managerId String
+  manager   User     @relation(fields: [managerId], references: [id])
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+}
+
+model ClockIn {
+  id           String    @id @default(cuid())
+  userId       String
+  user         User      @relation(fields: [userId], references: [id])
+  clockInAt    DateTime
+  clockInLat   Float
+  clockInLong  Float
+  clockInNote  String?
+  clockOutAt   DateTime?
+  clockOutLat  Float?
+  clockOutLong Float?
+  clockOutNote String?
 }
