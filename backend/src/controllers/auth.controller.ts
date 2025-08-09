@@ -115,6 +115,7 @@ export const googleAuthCallbackHandler = async (
 
     const { tokens } = await oauth2Client.getToken(code);
     const idToken = tokens.id_token;
+    console.log(idToken);
 
     if (!idToken) return res.status(400).json({ error: "Missing ID token" });
 
@@ -124,6 +125,7 @@ export const googleAuthCallbackHandler = async (
     });
 
     const payload = ticket.getPayload();
+    console.log(payload);
 
     if (!payload?.email) {
       return res.status(400).json({ error: "Missing email in ID token" });
@@ -157,6 +159,34 @@ export const googleAuthCallbackHandler = async (
       user,
       token,
     });
+  } catch (error) {
+    console.log(error);
+    return res.status(500).json({ error: "Internal server error" });
+  }
+};
+
+export const updateRoleHandler = async (req: Request, res: Response) => {
+  const { userId, role } = req.body;
+
+  const authenticatedUserId = req.userId;
+
+  if (authenticatedUserId !== userId) {
+    return res.status(403).json({ error: "Forbidden" });
+  }
+
+  if (!userId || !role) {
+    return res.status(400).json({ error: "User ID and role are required" });
+  }
+
+  try {
+    const user = await prisma.user.update({
+      where: { id: userId },
+      data: { role },
+    });
+
+    return res
+      .status(200)
+      .json({ message: "User role updated successfully", user });
   } catch (error) {
     console.log(error);
     return res.status(500).json({ error: "Internal server error" });
