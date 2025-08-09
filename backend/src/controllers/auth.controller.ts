@@ -154,14 +154,16 @@ export const googleAuthCallbackHandler = async (
       expiresIn: "3d",
     });
 
-    return res.status(200).json({
-      message: "Google authentication successful",
-      user,
-      token,
-    });
+    const frontend = process.env.FRONTEND_URL || "http://localhost:3000";
+    const url = new URL("/auth/callback", frontend);
+    url.searchParams.set("token", token);
+    return res.redirect(302, url.toString());
   } catch (error) {
     console.log(error);
-    return res.status(500).json({ error: "Internal server error" });
+    const frontend = process.env.FRONTEND_URL || "http://localhost:3000";
+    const url = new URL("/auth/login", frontend);
+    url.searchParams.set("oauth", "failed");
+    return res.redirect(302, url.toString());
   }
 };
 
@@ -187,6 +189,29 @@ export const updateRoleHandler = async (req: Request, res: Response) => {
     return res
       .status(200)
       .json({ message: "User role updated successfully", user });
+  } catch (error) {
+    console.log(error);
+    return res.status(500).json({ error: "Internal server error" });
+  }
+};
+
+export const getCurrentUser = async (req: Request, res: Response) => {
+  try {
+    const userId = req.userId;
+
+    if (!userId) {
+      return res.status(401).json({ error: "Unauthorized" });
+    }
+
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+    });
+
+    if (!user) {
+      return res.status(404).json({ error: "User not found" });
+    }
+
+    return res.status(200).json({ user });
   } catch (error) {
     console.log(error);
     return res.status(500).json({ error: "Internal server error" });
